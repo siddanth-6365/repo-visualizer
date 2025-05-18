@@ -16,7 +16,7 @@ const MermaidChart = ({ chart, zoomingEnabled = true }: MermaidChartProps) => {
   useEffect(() => {
     mermaid.initialize({
       startOnLoad: true,
-      theme: theme === "dark" ? "dark" : "default",
+      theme:"neutral",
       htmlLabels: true,
       flowchart: {
         htmlLabels: true,
@@ -36,6 +36,7 @@ const MermaidChart = ({ chart, zoomingEnabled = true }: MermaidChartProps) => {
         .clickable:hover > * {
           filter: brightness(0.85);
         }
+
       `,
     });
 
@@ -73,15 +74,15 @@ const MermaidChart = ({ chart, zoomingEnabled = true }: MermaidChartProps) => {
     };
 
     mermaid.contentLoaded();
-    // Wait for the SVG to be rendered
+
     setTimeout(() => {
       void initializePanZoom();
     }, 100);
 
     return () => {
-      // Cleanup not needed with dynamic import approach
+
     };
-  }, [chart, zoomingEnabled, theme]); // Added zoomingEnabled to dependencies
+  }, [chart, zoomingEnabled, theme]);
 
   return (
     <div
@@ -90,9 +91,8 @@ const MermaidChart = ({ chart, zoomingEnabled = true }: MermaidChartProps) => {
     >
       <div
         key={`${chart}-${zoomingEnabled}`}
-        className={`mermaid h-full ${
-          zoomingEnabled ? "rounded-lg border-2 border-black" : ""
-        }`}
+        className={`mermaid h-full ${zoomingEnabled ? "rounded-lg border-2 border-black" : ""
+          }`}
       >
         {chart}
       </div>

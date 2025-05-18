@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Braces, Boxes, Info, Loader2 } from 'lucide-react';
 import { ProcessingStatus, RepositoryData } from '@/lib/types';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm'
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 interface LandingPageProps {
   /** something like "owner/repo" */
@@ -88,7 +89,7 @@ export default function LandingPage({ initialRepo }: LandingPageProps) {
   return (
     <div className="container px-4 py-8 md:py-12 max-w-6xl mx-auto">
       <section className="mb-12 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-chart-1 dark:from-primary dark:to-chart-4">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-chart-1 dark:from-primary dark:to-chart-4 leading-tight pb-1">
           GitHub Repository Visualizer
         </h1>
         <p className="text-muted-foreground text-lg md:text-xl max-w-3xl mx-auto">
@@ -161,7 +162,10 @@ export default function LandingPage({ initialRepo }: LandingPageProps) {
               <CardContent>
                 <div className="prose dark:prose-invert max-w-none">
                   {repository.analysis ? (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}       // for GFM tables, strikethrough, etc.
+                      rehypePlugins={[rehypeRaw]}       // <-- enables raw HTML
+                    >
                       {repository.analysis}
                     </ReactMarkdown>
                   ) : (

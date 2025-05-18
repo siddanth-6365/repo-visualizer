@@ -4,6 +4,8 @@ import { Groq } from "groq-sdk";
 import { VisualizationRequest, VisualizationResponse } from "@/lib/types";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const LLM_MODEL = "meta-llama/llama-4-maverick-17b-128e-instruct";
+// const LLM_MODEL = "deepseek-r1-distill-llama-70b";
 
 export async function POST(request: Request) {
   try {
@@ -55,7 +57,7 @@ Return ONLY the explanation **wrapped** in <explanation>…</explanation> tags.
 `;
 
     const expCompletion = await groq.chat.completions.create({
-      model: "meta-llama/llama-4-maverick-17b-128e-instruct",
+      model: LLM_MODEL,
       messages: [
         {
           role: "system",
@@ -95,7 +97,7 @@ Component B: path/to/B
 </component_mapping>
 `;
     const mapCompletion = await groq.chat.completions.create({
-      model: "meta-llama/llama-4-maverick-17b-128e-instruct",
+      model: LLM_MODEL,
       messages: [
         {
           role: "system",
@@ -134,7 +136,7 @@ Produce only the **Mermaid.js** diagram code (no fences or extra text), using:
 Return the raw Mermaid.js code.
 `;
     const mermaidCompletion = await groq.chat.completions.create({
-      model: "meta-llama/llama-4-maverick-17b-128e-instruct",
+      model: LLM_MODEL,
       messages: [
         {
           role: "system",
