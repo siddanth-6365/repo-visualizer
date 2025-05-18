@@ -42,16 +42,16 @@ export default function LandingPage({ initialRepo }: LandingPageProps) {
         const githubData = await fetchRes.json();
 
         // 2. Generate visualization
-        const groqRes = await fetch('/api/groq', {
+        const aiRes = await fetch('/api/ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ repositoryData: githubData }),
         });
-        if (!groqRes.ok) {
-          const { message } = await groqRes.json();
+        if (!aiRes.ok) {
+          const { message } = await aiRes.json();
           throw new Error(message || 'Failed to generate visualization');
         }
-        const { diagram, analysis } = await groqRes.json();
+        const { diagram, analysis } = await aiRes.json();
 
         setRepository({ ...githubData, visualization: diagram, analysis });
         setStatus('completed');
