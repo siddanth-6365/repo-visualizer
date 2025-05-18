@@ -1,4 +1,5 @@
-"use client";
+// components/LandingPage.tsx
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { RepoForm } from '@/components/RepoForm';
@@ -6,11 +7,12 @@ import { VisualizationResult } from '@/components/VisualizationResult';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Braces, Boxes, Info, Loader2 } from 'lucide-react';
+import { Braces, Boxes, Info, Loader2, Code, AlertCircle } from 'lucide-react';
 import { ProcessingStatus, RepositoryData } from '@/lib/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import { Button } from '@/components/ui/button';
 
 interface LandingPageProps {
   /** something like "owner/repo" */
@@ -77,7 +79,6 @@ export default function LandingPage({ initialRepo }: LandingPageProps) {
   // if initialRepo is passed (via /[owner]/[repo] route), auto-submit once
   useEffect(() => {
     if (initialRepo && status === 'idle') {
-      // assume initialRepo is "owner/repo"
       fetchAndVisualize(`https://github.com/${initialRepo}`);
     }
   }, [initialRepo, status, fetchAndVisualize]);
@@ -106,7 +107,9 @@ export default function LandingPage({ initialRepo }: LandingPageProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <RepoForm onSubmit={handleSubmit} isLoading={status === 'loading'} />
+          <RepoForm onSubmit={handleSubmit} isLoading={status === 'loading'} defaultValue={
+            initialRepo ? `https://github.com/${initialRepo}` : ''
+          } />
         </CardContent>
       </Card>
 
@@ -135,47 +138,88 @@ export default function LandingPage({ initialRepo }: LandingPageProps) {
       )}
 
       {repository && status === 'completed' && (
-        <Tabs defaultValue="visualization" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
-            <TabsTrigger value="visualization" className="flex items-center gap-2">
-              <Boxes className="h-4 w-4" />
-              Visualization
-            </TabsTrigger>
-            <TabsTrigger value="analysis" className="flex items-center gap-2">
-              <Braces className="h-4 w-4" />
-              Analysis
-            </TabsTrigger>
-          </TabsList>
+        <>
+          <Tabs defaultValue="visualization" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-8">
+              <TabsTrigger value="visualization" className="flex items-center gap-2">
+                <Boxes className="h-4 w-4" />
+                Visualization
+              </TabsTrigger>
+              <TabsTrigger value="analysis" className="flex items-center gap-2">
+                <Braces className="h-4 w-4" />
+                Analysis
+              </TabsTrigger>
+              <TabsTrigger value="code" className="flex items-center gap-2">
+                <Code className="h-4 w-4" />
+                Code
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="visualization">
-            <VisualizationResult repository={repository} />
-          </TabsContent>
+            <TabsContent value="visualization">
+              <VisualizationResult repository={repository} />
+            </TabsContent>
 
-          <TabsContent value="analysis">
-            <Card>
-              <CardHeader>
-                <CardTitle>Repository Analysis</CardTitle>
-                <CardDescription>
-                  AI-generated insights about code architecture and relationships
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="prose dark:prose-invert max-w-none">
-                  {repository.analysis ? (
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}       // for GFM tables, strikethrough, etc.
-                      rehypePlugins={[rehypeRaw]}       // <-- enables raw HTML
-                    >
-                      {repository.analysis}
-                    </ReactMarkdown>
-                  ) : (
-                    <p>No analysis available for this repository.</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="analysis">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Repository Analysis</CardTitle>
+                  <CardDescription>
+                    AI-generated insights about code architecture and relationships
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose dark:prose-invert max-w-none">
+                    {repository.analysis ? (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeRaw]}
+                      >
+                        {repository.analysis}
+                      </ReactMarkdown>
+                    ) : (
+                      <p>No analysis available for this repository.</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="code">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Mermaid Diagram Code</CardTitle>
+                  <CardDescription>Copy the raw Mermaid.js diagram source</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <pre className="bg-muted p-4 rounded overflow-auto text-sm">
+                    {repository.visualization}
+                  </pre>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigator.clipboard.writeText(repository.visualization)}
+                    className="mt-2"
+                  >
+                    Copy to Clipboard
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          <div className="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900 rounded flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
+            <div className="text-sm text-yellow-800 dark:text-yellow-200">
+              AI-generated diagrams can sometimes contain syntax errors. If your diagram fails to render,
+              try again or test the raw code in the <a
+                href="https://mermaid.live/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >Mermaid Live Editor</a>.
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

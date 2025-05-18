@@ -105,8 +105,14 @@ Component B: path/to/B
     const componentMapping = mappingMatch ? mappingMatch[1].trim() : '';
 
     // 4️⃣ STEP 3: Mermaid diagram
-    const system3 =
-      'You are a senior principal software engineer. Generate valid, clickable, color-coded Mermaid.js code only.';
+    const system3 = `
+    You are a senior principal software engineer. Generate valid, clickable, color-coded Mermaid.js code only.
+    
+    Note: Any node label containing spaces or special characters must be wrapped in a single pair of double quotes inside the brackets.  
+    Example: TB["Telegram Bot (python-telegram-bot)"]
+    
+    Return only the raw Mermaid.js code (no fences or markdown).
+    `;
     const user3 = `
 <explanation>
 ${explanationText}
