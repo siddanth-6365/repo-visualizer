@@ -1,10 +1,18 @@
-import LandingPage from '@/components/LandingPage';
+import LandingPage from '@/components/LandingPage'
 
 interface RepoRoutePageProps {
-    params: { owner: string; repo: string };
+ 
+  params: Promise<{
+    owner: string
+    repo: string
+  }>
 }
 
-export default function RepoRoutePage({ params }: RepoRoutePageProps) {
-    const initialRepo = `${params.owner}/${params.repo}`;
-    return <LandingPage initialRepo={initialRepo} />;
+export default async function RepoRoutePage({
+  params,
+}: RepoRoutePageProps) {
+  const { owner, repo } = await params
+  const initialRepo = `${owner}/${repo}`
+
+  return <LandingPage initialRepo={initialRepo} />
 }
