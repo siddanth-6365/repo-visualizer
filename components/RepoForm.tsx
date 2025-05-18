@@ -26,15 +26,16 @@ type RepoFormValues = z.infer<typeof repoSchema>;
 type RepoFormProps = {
   onSubmit: (url: string) => Promise<void>;
   isLoading: boolean;
+  defaultValue: string;
 };
 
-export function RepoForm({ onSubmit, isLoading }: RepoFormProps) {
+export function RepoForm({ onSubmit, isLoading, defaultValue }: RepoFormProps) {
   const [recentRepos, setRecentRepos] = useState<string[]>([]);
 
   const form = useForm<RepoFormValues>({
     resolver: zodResolver(repoSchema),
     defaultValues: {
-      url: '',
+      url: defaultValue ?? '',
     },
   });
 

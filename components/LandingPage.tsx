@@ -192,12 +192,12 @@ export default function LandingPage({ initialRepo }: LandingPageProps) {
                 </CardHeader>
                 <CardContent>
                   <pre className="bg-muted p-4 rounded overflow-auto text-sm">
-                    {repository.visualization}
+                    {(repository.visualization ?? "")}
                   </pre>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigator.clipboard.writeText(repository.visualization)}
+                    onClick={() => navigator.clipboard.writeText(repository.visualization ?? "")}
                     className="mt-2"
                   >
                     Copy to Clipboard
