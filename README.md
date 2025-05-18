@@ -51,11 +51,11 @@ https://repo-visualizer.vercel.app/<owner>/<repo>
 
 ## 🧠 AI Model
 
-We use Groq’s blazing-fast LLaMA 4 model:
+We use OpenAI's o4-mini:
 
 ```
 
-meta-llama/llama-4-maverick-17b-128e-instruct
+OpenAI o4-mini
 
 ````
 
@@ -72,5 +72,5 @@ To:
 - **Tailwind CSS**
 - **shadcn/ui**
 - **Mermaid.js**
-- **Groq LLaMA-4 API**
+- **OpenAI o4-mini**
 - **GitHub REST API**
