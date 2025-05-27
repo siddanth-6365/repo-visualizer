@@ -9,6 +9,9 @@ const rateLimiter = new RateLimiterMemory({
   duration: 300, // per 5 minutes by IP
 });
 
+// In-memory cache for visualization results by repository name
+const visualizationCache: Record<string, VisualizationResponse> = {};
+
 // Initialize OpenAI client for o4-mini
 type ReasoningEffort = "low" | "medium" | "high";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -61,6 +64,11 @@ export async function POST(request: Request) {
     }
 
     const { name, description, fileTree, readme = "" } = repositoryData;
+
+    // Check cache by repository name
+    if (name && visualizationCache[name]) {
+      return NextResponse.json(visualizationCache[name]);
+    }
 
     // Truncate inputs to control context size
     const treeLines =
@@ -168,6 +176,10 @@ Return the raw Mermaid.js code.
       `<div>${explanationText.replace(/\n/g, "<br/>")}</div>`;
 
     const result: VisualizationResponse = { diagram, analysis: analysisHtml };
+    // Store in cache by repository name
+    if (name) {
+      visualizationCache[name] = result;
+    }
     return NextResponse.json(result);
   } catch (error) {
     console.error("Visualization error:", error);
