@@ -30,6 +30,7 @@ async function callO4Mini(
     reasoning_effort: reasoningEffort,
   });
   const content = response.choices?.[0]?.message?.content;
+  // console.log("o4-mini response:", content);
   if (!content) throw new Error("No content returned from o4-mini");
   return content;
 }
@@ -76,24 +77,60 @@ export async function POST(request: Request) {
         : readme || "No README available";
 
     // STEP 1: Explanation
-    const system1 =
-      "You are a software architecture expert. Produce a concise, HTML-friendly explanation wrapped in <explanation> tags.";
+    const system1 = `
+    You are tasked with explaining to a principal software engineer how to draw the best and most accurate system design diagram / architecture of a given project. This explanation should be tailored to the specific project's purpose and structure. To accomplish this, you will be provided with two key pieces of information:
+    
+    1. The complete and entire file tree of the project including all directory and file names, which will be enclosed in <file_tree> tags in the user's message.
+    
+    2. The README file of the project, which will be enclosed in <readme> tags in the user's message.
+    
+    Analyze these components carefully, as they will provide crucial information about the project's structure and purpose. Follow these steps to create an explanation for the principal software engineer:
+    
+    1. Identify the project type and purpose:
+       - Examine the file structure and README to determine if the project is a full-stack application, an open-source tool, a compiler, or another type of software.
+       - Look for key indicators in the README, such as project description, features, or use cases.
+    
+    2. Analyze the file structure:
+       - Pay attention to top-level directories and their names (e.g., "frontend", "backend", "src", "lib", "tests").
+       - Identify patterns in the directory structure that might indicate architectural choices (e.g., MVC, microservices).
+       - Note any configuration files, build scripts, or deployment-related files.
+    
+    3. Examine the README for additional insights:
+       - Look for sections describing the architecture, dependencies, or technical stack.
+       - Check for any diagrams or explanations of the system's components.
+    
+    4. Based on your analysis, explain how to create a system design diagram that accurately represents the project's architecture. Include:
+       a. The main components (e.g., frontend, backend, database, external services).
+       b. The relationships and interactions between components.
+       c. Any important architectural patterns or design principles.
+       d. Relevant technologies, frameworks, or libraries in use.
+    
+    5. Provide guidelines for tailoring the diagram to the specific project type:
+       - For a full-stack app, emphasize separation of frontend/backend, database interactions, and API layers.
+       - For an open-source tool, focus on core functionality, extensibility points, and integration.
+       - For compilers/language projects, highlight compilation stages, intermediate representations, etc.
+    
+    6. Instruct the engineer to include in the diagram:
+       - Clear labels for each component.
+       - Directional arrows for data flow/dependencies.
+       - Color coding or shapes to distinguish component types.
+    
+    7. Emphasize being very detailed and capturing essential architectural elements without overthinking—separate the system into as many logical components as makes sense.
+    
+    Return your explanation wrapped only in <explanation>…</explanation> tags, and make it concise and HTML-friendly.
+    `.trim();
+
     const user1 = `
-<file_tree>
-${treeLines}
-</file_tree>
-
-<readme>
-${readmeSnippet}
-</readme>
-
-Your task: As a principal software engineer, analyze the above file tree and README to explain the project's architecture.
-• Identify project type, main components (frontend, backend, services, DBs).
-• Call out architectural patterns (MVC, microservices, event-driven, etc.).
-• Highlight key technologies and how they interact.
-
-Return ONLY the explanation wrapped in <explanation>…</explanation> tags.
-`;
+    <file_tree>
+    ${treeLines}
+    </file_tree>
+    
+    <readme>
+    ${readmeSnippet}
+    </readme>
+    
+    Your task: As a principal software engineer, analyze the above file tree and README to explain the project's architecture following the system instructions. Return ONLY the explanation wrapped in <explanation>…</explanation> tags.
+    `;
     const explanationRaw = await callO4Mini(system1, user1, "medium", 2000);
     const explanationMatch = explanationRaw.match(
       /<explanation>([\s\S]*?)<\/explanation>/
@@ -102,9 +139,33 @@ Return ONLY the explanation wrapped in <explanation>…</explanation> tags.
       ? explanationMatch[1].trim()
       : explanationRaw.trim();
 
+    await new Promise((r) => setTimeout(r, 500));
+
     // STEP 2: Component mapping
-    const system2 =
-      "You are a software architect assistant. Produce a mapping wrapped in <component_mapping> tags.";
+    const system2 = `
+You are tasked with mapping key components of a system design to their corresponding files and directories in a project's file structure. You will be provided with a detailed explanation of the system design/architecture and a file tree of the project.
+
+First, carefully read the system design explanation which will be enclosed in <explanation> tags in the user's message.
+
+Then, examine the file tree of the project which will be enclosed in <file_tree> tags in the user's message.
+
+Your task is to analyze the system design explanation and identify key components, modules, or services mentioned. Then, try your best to map these components to what you believe could be their corresponding directories and files in the provided file tree.
+
+Guidelines:
+1. Focus on major components described in the system design.
+2. Look for directories and files that clearly correspond to these components.
+3. Include both directories and specific files when relevant.
+4. If a component doesn't have a clear corresponding file or directory, simply don’t include it in the map.
+
+Provide your final answer in the following format, wrapped in <component_mapping> tags (and nothing else):
+
+<component_mapping>
+1. [Component Name]: [File/Directory Path]
+2. [Component Name]: [File/Directory Path]
+…  
+</component_mapping>
+`.trim();
+
     const user2 = `
 <explanation>
 ${explanationText}
@@ -114,44 +175,50 @@ ${explanationText}
 ${treeLines}
 </file_tree>
 
-Your task: Map each major component from the explanation to its corresponding file or directory path.
-Output as:
-<component_mapping>
-Component A: path/to/A
-Component B: path/to/B
-…
-</component_mapping>
+Your task: Map each major component from the explanation to its corresponding file or directory path, following the system instructions exactly.
 `;
-    const mappingRaw = await callO4Mini(system2, user2, "low", 1000);
-    const mappingMatch = mappingRaw.match(
-      /<component_mapping>([\s\S]*?)<\/component_mapping>/
-    );
-    const componentMapping = mappingMatch ? mappingMatch[1].trim() : "";
 
-    // STEP 3: Mermaid diagram
+    const mappingRaw = await callO4Mini(system2, user2, "low", 2000);
+
+    const mappingMatch = mappingRaw.match(
+      /<component_mapping>([\\s\\S]*?)<\/component_mapping>/
+    );
+    const componentMapping = mappingMatch
+      ? mappingMatch[1].trim()
+      : mappingRaw.trim();
+
+    await new Promise((r) => setTimeout(r, 500));
+
+    // STEP 3: Generate Mermaid diagram
     const system3 = `
-    You are a senior principal software engineer. Produce **only** valid Mermaid-JS code (no fences, no markdown).
-    
-    ──────── Syntax guard-rails ────────
-    • Diagram type: \`flowchart TD\` (top-down → vertical).
-    • Node labels **must** be quoted if they contain spaces *or* special characters, including parentheses.
-      ✓ Good:  DB1["Postgres (Supabase)"]:::db
-      ✓ Good:  DB1[Postgres Supabase]:::db
-      ✗ Bad :  DB1[Postgres (Supabase)]:::db   ← never output this form.
-    • Relationship / edge labels: if they contain spaces, wrap the entire label in quotes.  
-      ✓  A -->|"calls service"| B
-    • Do **not** style a subgraph header or give it an alias.  
-      ✗  subgraph "Frontend":::frontend   ← illegal  
-      ✓  subgraph "Frontend"             ← legal, then style inner nodes.
-    • Orient the graph **vertically**; avoid long horizontal chains.
-    • Include colour classes via \`classDef\` and apply them to nodes, **not** subgraph headers.
-    • Use shapes where they add clarity (cylinders for DBs, etc.).
-    • Attach click-events exactly as in <component_mapping> (path only, no URL).
-    
-    ──────── What to output ────────
-    Return the raw Mermaid text *only*. No commentary, no markdown back-ticks, no \`%%{init...}%%\` blocks, no leading/trailing whitespace outside the diagram.
-    `;
-    
+You are a principal software engineer tasked with creating a system design diagram using Mermaid.js based on a detailed explanation. Your goal is to accurately represent the architecture and design of the project as described in the explanation.
+
+The detailed explanation of the design will be enclosed in <explanation> tags in the user's message.
+Also, sourced from the explanation, some components have been mapped to their file paths in the project, which will be enclosed in <component_mapping> tags in the user's message.
+
+To create the Mermaid.js diagram:
+1. Carefully read and analyze the provided design explanation.
+2. Identify the main components, services, and their relationships within the system.
+3. Use a flowchart TD (top-down) layout to keep it vertical.
+4. Create the Mermaid.js code ensuring:
+   - All major components are included
+   - Relationships are clearly shown with arrows
+   - The layout is logical and easy to follow
+
+Guidelines:
+- Use rectangles/cylinders/etc. for different component types.
+- Quote any node label containing spaces or special characters.
+- Do **not** style subgraph headers; apply classDef styles to nodes only.
+- Group related nodes with subgraph blocks.
+- Include click events for every component in <component_mapping>:
+  - **Path only**, no URLs (e.g. click Example "app/example.js")
+  - Use directory paths for directories, file paths for files.
+- Avoid long horizontal chains—keep the graph vertical.
+- Include color classes via classDef and apply them to nodes.
+
+Output **only** the raw Mermaid.js code—no fences, markdown, init blocks, or extra text.
+`.trim();
+
     const user3 = `
 <explanation>
 ${explanationText}
@@ -160,22 +227,14 @@ ${explanationText}
 <component_mapping>
 ${componentMapping}
 </component_mapping>
-
-Produce only the Mermaid.js diagram code (no fences or extra text), using:
-• flowchart TD
-• subgraphs for layers
-• click events with exact paths from the mapping
-• quoted labels when containing special chars
-• color classes for front/backend/db as appropriate
-
-Return the raw Mermaid.js code.
 `;
-    const mermaidRaw = await callO4Mini(system3, user3, "low", 3000);
 
-    // strip triple-backtick fences if any
+    const mermaidRaw = await callO4Mini(system3, user3, "low", 5000);
+
+    // Strip any triple-backtick fences if present:
     const fenceRegex = /```(?:mermaid)?\s*([\s\S]*?)\s*```/i;
-    const diagramMatch = mermaidRaw.match(fenceRegex);
-    const diagram = diagramMatch ? diagramMatch[1].trim() : mermaidRaw.trim();
+    const diagram =
+      mermaidRaw.match(fenceRegex)?.[1].trim() ?? mermaidRaw.trim();
 
     // build HTML analysis
     const analysisHtml =
