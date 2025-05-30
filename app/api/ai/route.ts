@@ -6,7 +6,7 @@ import { VisualizationRequest, VisualizationResponse } from "@/lib/types";
 // 1) configure in-memory limiter: 5 points per 60 seconds
 const rateLimiter = new RateLimiterMemory({
   points: 5, // up to 5 requests
-  duration: 300, // per 5 minutes by IP
+  duration: 1800, // per 30 minutes by IP
 });
 
 // Initialize OpenAI client for o4-mini
@@ -130,13 +130,28 @@ Component B: path/to/B
 
     // STEP 3: Mermaid diagram
     const system3 = `
-You are a senior principal software engineer. Generate valid, clickable, color-coded Mermaid.js code only.
-
-Note: Any node label containing spaces or special characters must be wrapped in a single pair of double quotes inside the brackets.  
-Example: TB["Telegram Bot (python-telegram-bot)"]
-
-Return only the raw Mermaid.js code (no fences or markdown).
-`;
+    You are a senior principal software engineer. Produce **only** valid Mermaid-JS code (no fences, no markdown).
+    
+    ──────── Syntax guard-rails ────────
+    • Diagram type: \`flowchart TD\` (top-down → vertical).
+    • Node labels **must** be quoted if they contain spaces *or* special characters, including parentheses.
+      ✓ Good:  DB1["Postgres (Supabase)"]:::db
+      ✓ Good:  DB1[Postgres Supabase]:::db
+      ✗ Bad :  DB1[Postgres (Supabase)]:::db   ← never output this form.
+    • Relationship / edge labels: if they contain spaces, wrap the entire label in quotes.  
+      ✓  A -->|"calls service"| B
+    • Do **not** style a subgraph header or give it an alias.  
+      ✗  subgraph "Frontend":::frontend   ← illegal  
+      ✓  subgraph "Frontend"             ← legal, then style inner nodes.
+    • Orient the graph **vertically**; avoid long horizontal chains.
+    • Include colour classes via \`classDef\` and apply them to nodes, **not** subgraph headers.
+    • Use shapes where they add clarity (cylinders for DBs, etc.).
+    • Attach click-events exactly as in <component_mapping> (path only, no URL).
+    
+    ──────── What to output ────────
+    Return the raw Mermaid text *only*. No commentary, no markdown back-ticks, no \`%%{init...}%%\` blocks, no leading/trailing whitespace outside the diagram.
+    `;
+    
     const user3 = `
 <explanation>
 ${explanationText}
